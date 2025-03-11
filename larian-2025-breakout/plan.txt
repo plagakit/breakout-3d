@@ -1,0 +1,60 @@
+I have a week to make Breakout and put a cool lil spin on it, so this is a plan
+to budget my time effectively. I can spend around 1-2 hours everyday working on
+the project, so I should budget my time with that in mind.
+
+Game Idea:
+- Breakout but it's a roguelike
+  - Will demonstrate basic abilities to code things like breakout 
+    but also how to architect larger complex systems that are in things
+    like a roguelike
+- Gameplay loop: when you destroy the grid of bricks, you advance to a 
+  harder grid of bricks and player powers up
+  - How to scale difficulty?
+    - Different brick types that make it harder to hit ball
+    - More bricks
+  - How to power up player?
+    - Offer 3 upgrades for the player to choose
+    - "Inventory system" for upgrades
+- Making it more fun
+  - I played a lot of Bushido Ball, a game in UFO 50, which is like
+    Pong but really fun because it has a unique movement style
+  - Implementing characters like bushido ball could be unique and fun spin
+    on breakout and would also include making systems like animation and
+    state machines(?)
+
+Monday
+- Goals: make plan, think of ideas
+- Achieved: done
+
+Tuesday
+- Goals: implement basic breakout w/ ECS
+- Achieved: 
+  - Refactored entity view to be able to use parallel execution policy
+  - Made ball movement, I can update ~1 million balls at 60 FPS w/ parallel execution
+  - I'll push basic breakout to tomorrow, and bushido character to thursday while planning
+    architecture throughout
+
+Wednesday
+- Goals: make bushido ball-style character
+- Achieved: 
+
+Thursday
+- Goals: catch up for previous days, plan architecture for overall game
+- Achieved: 
+
+Friday
+- Goals: turn into roguelike
+- Achieved: 
+
+Saturday
+- Goals: turn into roguelike pt. 2
+- Achieved: 
+
+Sunday
+- Goals: turn into roguelike pt. 3
+- Achieved: 
+
+Monday
+- Goals: code cleanup, testing, etc.
+- Achieved: 
+
