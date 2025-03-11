@@ -23,8 +23,8 @@ Game Idea:
     state machines(?)
 
 Monday
-- Goals: make plan, think of ideas
-- Achieved: done
+- Goals: make plan, think of ideas, create project
+- Achieved: done all of above, made simple Raylib app
 
 Tuesday
 - Goals: implement basic breakout w/ ECS
