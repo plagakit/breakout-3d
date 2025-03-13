@@ -1,6 +1,10 @@
 #pragma once
 
 // Taken from my Ubisoft NEXT 2025 ECS code
+// I modified it on Monday to add ParallelForAll, which needs the following two includes:
+#include <functional>
+#include <execution>
+// See 'entity_view.h' for more info
 // https://github.com/plagakit/ubisoft-next-2025/blob/main/Engine/src/entity/entity_manager/entity_manager.h
 
 #include "entity.h"
@@ -70,6 +74,13 @@ public:
 
 	template<typename T, typename... Ts>
 	EntityView<T, Ts...> AllWith();
+
+
+	template<typename T, typename... Ts>
+	using EntityViewValue = typename EntityView<T, Ts...>::value_type;
+
+	template<typename T, typename... Ts>
+	void ParallelForAll(std::function<void(EntityViewValue<T, Ts...>)>);
 
 private:
 	// Allow all EntityView templates to access EntityManager
@@ -195,6 +206,18 @@ template<typename T, typename ...Ts>
 inline EntityView<typename T, Ts...> EntityManager::AllWith()
 {
 	return EntityView<T, Ts...>(*this, 0);
+}
+
+template<typename T, typename ...Ts>
+inline void EntityManager::ParallelForAll(std::function<void(EntityViewValue<T, Ts...>)> lambda)
+{
+	auto view = AllWith<T, Ts...>();
+	std::for_each(
+		std::execution::par,
+		view.begin(),
+		view.end(),
+		lambda
+	);
 }
 
 template<typename T>

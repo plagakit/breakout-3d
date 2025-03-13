@@ -1,24 +1,23 @@
 #include <iostream>
 
 #include "raylib.h"
-#include "ecs/entity_manager.h"
-#include "scene/breakout_scene.h"
+#include "game/game.h"
 
 int main()
 {
 	std::cout << "Hello World!" << std::endl;
 
-	InitWindow(800, 450, "Larian Interview 2025 :: Breakout :: Thomas Plagakis");
+	InitWindow(Game::SCREEN_WIDTH, Game::SCREEN_HEIGHT, Game::SCREEN_TITLE);
 	SetTargetFPS(60);
 
-	EntityManager registry;
+	//EntityManager registry;
 	//registry.ReserveEntities(100);
-	registry.RegisterComponentType<int>(100);
-	for (int i = 0; i < 100; i++)
-	{
-		Entity e = registry.CreateEntity();
-		registry.Add<int>(e, i * 13);
-	}
+	//registry.RegisterComponentType<int>(100);
+	//for (int i = 0; i < 100; i++)
+	//{
+	//	Entity e = registry.CreateEntity();
+	//	registry.Add<int>(e, i * 13);
+	//}
 	//	
 	//std::cout << "Count: " << registry.Count() << std::endl;
 	//for (auto [id, i] : registry.AllWith<int>())
@@ -29,17 +28,18 @@ int main()
 	//registry.FlushDeleteQueue();
 	//std::cout << "Count: " << registry.Count() << std::endl;
 
-	BreakoutScene scene;
+	Game game;
 
 	while (!WindowShouldClose())
 	{
-		scene.Update(GetFrameTime());
+		game.Update(GetFrameTime());
 
 		BeginDrawing();
-		ClearBackground(RAYWHITE);
-		DrawText("Hello World!", 190, 200, 20, LIGHTGRAY);
-		scene.Render();
+		ClearBackground(BLACK);
+		game.Render();
+#ifdef _DEBUG
 		DrawFPS(0, 0);
+#endif
 		EndDrawing();
 	}
 

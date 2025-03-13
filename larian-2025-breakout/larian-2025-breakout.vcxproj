@@ -88,7 +88,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>GRAPHICS_API_OPENGL_33;PLATFORM_DESKTOP;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)/src;$(ProjectDir)/external/raylib/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)/external/glm;$(ProjectDir)/src;$(ProjectDir)/external/raylib/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <CompileAs>Default</CompileAs>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
@@ -106,7 +106,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>GRAPHICS_API_OPENGL_33;PLATFORM_DESKTOP;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)/src;$(ProjectDir)/external/raylib/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)/external/glm;$(ProjectDir)/src;$(ProjectDir)/external/raylib/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <CompileAs>Default</CompileAs>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
@@ -124,7 +124,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>GRAPHICS_API_OPENGL_33;PLATFORM_DESKTOP;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)/src;$(ProjectDir)/external/raylib/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)/external/glm;$(ProjectDir)/src;$(ProjectDir)/external/raylib/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <CompileAs>Default</CompileAs>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
@@ -142,7 +142,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>GRAPHICS_API_OPENGL_33;PLATFORM_DESKTOP;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)/src;$(ProjectDir)/external/raylib/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)/external/glm;$(ProjectDir)/src;$(ProjectDir)/external/raylib/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <CompileAs>Default</CompileAs>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
@@ -156,8 +156,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\ecs\entity_manager.cpp" />
+    <ClCompile Include="src\game\breakout\factory\breakout_factory.cpp" />
+    <ClCompile Include="src\game\breakout\systems\breakout_system.cpp" />
+    <ClCompile Include="src\game\game.cpp" />
     <ClCompile Include="src\main.cpp" />
-    <ClCompile Include="src\scene\breakout_scene.cpp" />
+    <ClCompile Include="src\game\breakout\breakout_scene.cpp" />
+    <ClCompile Include="src\math\collision_solver.cpp" />
+    <ClCompile Include="src\resource\rl_texture.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="external\raylib\include\raylib.h" />
@@ -167,7 +172,15 @@
     <ClInclude Include="src\ecs\entity_manager.h" />
     <ClInclude Include="src\ecs\entity_view.h" />
     <ClInclude Include="src\ecs\sparse_set.h" />
-    <ClInclude Include="src\scene\breakout_scene.h" />
+    <ClInclude Include="src\game\breakout\breakout_scene.h" />
+    <ClInclude Include="src\game\breakout\components\breakout_components.h" />
+    <ClInclude Include="src\game\breakout\factory\breakout_factory.h" />
+    <ClInclude Include="src\game\breakout\systems\breakout_system.h" />
+    <ClInclude Include="src\game\game.h" />
+    <ClInclude Include="src\math\colliders.h" />
+    <ClInclude Include="src\math\collision_solver.h" />
+    <ClInclude Include="src\math\math.h" />
+    <ClInclude Include="src\resource\rl_texture.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="plan.txt" />
