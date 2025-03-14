@@ -4,25 +4,21 @@
 
 struct CollisionData
 {
-	Vec2 position1;
-	Vec2 position2;
+	Vec3 pos1 = { 0.0f, 0.0f, 0.0f };
+	Vec3 pos2 = { 0.0f, 0.0f, 0.0f };
 };
 
 struct CollisionResult
 {
 	bool hit = false;
-	Vec2 contactNormal = { 0.0f, 0.0f };
-	Vec2 restitution = { 0.0f, 0.0f };
-	Vec2 contactPos = { 0.0f, 0.0f }; // for rays
+	Vec3 contactNormal = { 0.0f, 0.0f, 0.0f };
+	Vec3 restitution = { 0.0f, 0.0f, 0.0f };
 };
 
 // All of the physics solving code in a neat little place
 class CollisionSolver
 {
 public:
-	static CollisionResult Collide(const CollisionData& data, const CircleCollider& c1, const CircleCollider& c2);
-	static CollisionResult Collide(const CollisionData& data, const CircleCollider& c, const AABBCollider& b);
-	static CollisionResult Collide(const CollisionData& data, const AABBCollider& b1, const AABBCollider& b2);
-
-	//static CollisionResult Collide(const CollisionData& data, const RayCollider& r, const AABBCollider& b);
+	static CollisionResult Solve(const CollisionData& data, const SphereCollider& c1, const SphereCollider& c2);
+	static CollisionResult Solve(const CollisionData& data, const SphereCollider& c, const AABBCollider& b);
 };

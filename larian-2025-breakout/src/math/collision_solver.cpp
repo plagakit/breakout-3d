@@ -1,74 +1,91 @@
 #include "collision_solver.h"
 
 // I'll implement these as I need them
-// Tuesday: circle vs aabb for ball against brick
 
 #include <algorithm>
 
-// Circle vs. Circle
-CollisionResult CollisionSolver::Collide(const CollisionData& data, const CircleCollider& c1, const CircleCollider& c2)
+// Sphere vs. Sphere
+CollisionResult CollisionSolver::Solve(const CollisionData& data, const SphereCollider& c1, const SphereCollider& c2)
 {
-    CollisionResult result{};
-    return result;
-}
-
-// Circle vs. AABB
-CollisionResult CollisionSolver::Collide(const CollisionData& data, const CircleCollider& c, const AABBCollider& b)
-{
-	// Partially lifted from https://github.com/plagakit/ubisoft-next-2025/blob/main/Engine/src/physics/collision/collision_solver.cpp
-	// but modified to be cleaner (the contact normal calculation)
-
 	CollisionResult result{};
-	result.hit = false;
 
-	Vec2 cPos = data.position1 + c.offset;
-	Vec2 bPos = data.position2 + b.offset;
-	Vec2 half = Vec2{ b.width, b.height } * 0.5f;
-	Vec2 bMinPos = bPos - half;
-	Vec2 bMaxPos = bPos + half;
-
-	// Calculate the closest corner on box to circle center
-	Vec2 closest;
-	closest.x = std::min(std::max(cPos.x, bMinPos.x), bMaxPos.x);
-	closest.y = std::min(std::max(cPos.y, bMinPos.y), bMaxPos.y);
-
-	float distSq = glm::length2(cPos - closest);
-	if (distSq <= c.radius * c.radius)
+	Vec3 diff = data.pos2 - data.pos1;
+	float distSq = Vector3LengthSqr(diff);
+	float radius = c1.radius + c2.radius;
+	if (distSq < radius)
 	{
 		result.hit = true;
+
 		float dist = sqrtf(distSq);
-		
-		// Calculate contact normal by projecting onto an axis of closest wall
-		Vec2 normalDir = (cPos - closest) / dist;
-		if (std::abs(normalDir.x) > std::abs(normalDir.y)) 
-		{
-			result.contactNormal.x = (normalDir.x > 0) ? 1.0f : -1.0f;
-			result.contactNormal.y = 0.0f;
-		}
-		else 
-		{
-			result.contactNormal.x = 0.0f;
-			result.contactNormal.y = (normalDir.y > 0) ? 1.0f : -1.0f;
-		}
-		
-		// Minimum distance needed to move them out of eachother is:
-		result.restitution = result.contactNormal * (c.radius - dist);
+		result.contactNormal = diff / dist;
+		result.restitution = result.contactNormal * (radius - dist);
 	}
 
 	return result;
 }
 
-// AABB vs. AABB
-CollisionResult CollisionSolver::Collide(const CollisionData& data, const AABBCollider& b1, const AABBCollider& b2)
+// Sphere vs. AABB
+CollisionResult CollisionSolver::Solve(const CollisionData& data, const SphereCollider& c, const AABBCollider& b)
 {
-    CollisionResult result{};
-    return result;
-}
+	CollisionResult result{};
 
-// Ray vs. AABB
-//CollisionResult CollisionSolver::Collide(const CollisionData& data, const RayCollider& r, const AABBCollider& b)
-//{
-//	CollisionResult result{};
-//
-//	return result;
-//}
+	Vec3 half = { b.width * 0.5f, b.height * 0.5f, b.length * 0.5f };
+	Vec3 boxMin = data.pos2 - half;
+	Vec3 boxMax = data.pos2 + half;
+
+	// Find the closest point on AABB to sphere's center
+	Vec3 closestPoint;
+	closestPoint.x = std::clamp(data.pos1.x, boxMin.x, boxMax.x);
+	closestPoint.y = std::clamp(data.pos1.y, boxMin.y, boxMax.y);
+	closestPoint.z = std::clamp(data.pos1.z, boxMin.z, boxMax.z);
+
+	Vec3 diff = data.pos1 - closestPoint;
+	float distSq = Vector3LengthSqr(diff);
+	if (distSq < c.radius * c.radius)
+	{
+		result.hit = true;
+
+		// If sphere center inside the box
+		if (distSq < EPSILON)
+		{
+			Vec3 toCenter = data.pos1 - data.pos2;
+			float xDepth = half.x - std::abs(toCenter.x);
+			float yDepth = half.y - std::abs(toCenter.y);
+			float zDepth = half.z - std::abs(toCenter.z);
+			float penetration = 0.0f;
+
+			// Find shortest direction to push out
+			// Normal is on x-axis
+			if (xDepth < yDepth && xDepth < zDepth)
+			{
+				if (toCenter.x > 0) result.contactNormal = { 1.0f, 0.0f, 0.0f };
+				else				result.contactNormal = { -1.0f, 0.0f, 0.0f };
+				penetration = c.radius - xDepth;
+			}
+			// Normal is on y-axis
+			else if (yDepth < zDepth)
+			{
+				if (toCenter.y > 0) result.contactNormal = { 0.0f, 1.0f, 0.0f };
+				else				result.contactNormal = { 0.0f, -1.0f, 0.0f };
+				penetration = c.radius - yDepth;
+			}
+			// Normal is on z-axis
+			else
+			{
+				if (toCenter.z > 0) result.contactNormal = { 0.0f, 0.0f, 1.0f };
+				else				result.contactNormal = { 0.0f, 0.0f, -1.0f };
+				penetration = c.radius - zDepth;
+			}
+
+			result.restitution = result.contactNormal * penetration;
+		}
+		else
+		{
+			float dist = sqrtf(distSq);
+			result.contactNormal = diff / dist;
+			result.restitution = result.contactNormal * (c.radius - dist);
+		}
+	}
+
+	return result;
+}

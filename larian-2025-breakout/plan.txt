@@ -37,6 +37,10 @@ Tuesday
 Wednesday
 - Goals: make bushido ball-style character
 - Achieved: 
+  - Made 2D collisions, simple breakout
+
+OK this is where the plan has diverged. I've made a simple 2D breakout, but I wanna
+be ambitious. Larian makes 3D games, I'm sure they'd be looking for a 3D skillset.
 
 Thursday
 - Goals: catch up for previous days, plan architecture for overall game

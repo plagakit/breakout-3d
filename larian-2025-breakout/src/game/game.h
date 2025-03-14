@@ -2,7 +2,7 @@
 
 #include "math/math.h"
 #include "ecs/entity_manager.h"
-#include "breakout/breakout_scene.h"
+#include "breakout/breakout.h"
 
 #include <raylib.h>
 #include <raymath.h>
@@ -30,7 +30,7 @@ public:
 private:
 	EntityManager m_registry;
 
-	std::unique_ptr<BreakoutScene> m_breakout;
+	std::unique_ptr<Breakout> m_breakout;
 
 	// Scrolling background
 	static constexpr float SCROLL_BG_SPD = 50.0f;
@@ -38,5 +38,7 @@ private:
 	Vec2 SCROLL_BG_VELOCITY = { SCROLL_BG_SPD, SCROLL_BG_SPD };
 
 	Vec2 m_scrollBGOffset = { 0.0f, 0.0f };
+
+	Image checked;
 
 };

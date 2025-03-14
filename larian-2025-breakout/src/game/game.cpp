@@ -2,7 +2,12 @@
 
 Game::Game()
 {
-	m_breakout = std::make_unique<BreakoutScene>(m_registry);
+	DisableCursor();
+
+	checked = GenImageChecked(2, 2, 1, 1, { 50, 50, 50, 255 }, { 75, 75, 75, 255 });
+ 
+
+	m_breakout = std::make_unique<Breakout>(m_registry);
 }
 
 void Game::Update(float dt)
