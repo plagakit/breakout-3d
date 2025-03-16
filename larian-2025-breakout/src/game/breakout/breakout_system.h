@@ -17,14 +17,19 @@ public:
 
 	// General movement & physics
 	void UpdateMovement(float dt);
-	void BounceBallsOffWalls(float dt);
 	void ProcessBallCollisions();
+	void ProcessPlayerWallCollision();
 
 	// Game logic
+	void UpdateBalls(float dt);
 	void UpdateBricks();
+	//bool IsBallInEndZone();
 
 	// Rendering
-	void Render3DScene(const Camera3D& camera);
+	void RenderWalls(const Mesh& mesh, const Material& mat);
+	void RenderPrimitiveEntities(const Camera3D& camera);
+	void RenderBallShadows(const Mesh& quad, const Material& mat);
+	void RenderEndzone(Entity endZone, const Mesh& mesh, const Material& mat);
 	void RenderPlayerUI(Entity player);
 
 private:

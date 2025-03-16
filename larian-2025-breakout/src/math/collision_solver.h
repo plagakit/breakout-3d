@@ -21,4 +21,5 @@ class CollisionSolver
 public:
 	static CollisionResult Solve(const CollisionData& data, const SphereCollider& c1, const SphereCollider& c2);
 	static CollisionResult Solve(const CollisionData& data, const SphereCollider& c, const AABBCollider& b);
+	static CollisionResult Solve(const CollisionData& data, const AABBCollider& b1, const AABBCollider& b2);
 };

@@ -14,6 +14,7 @@ class Breakout
 {
 public:
 	Breakout(EntityManager& registry);
+	~Breakout();
 
 	void Update(float dt);
 	void Render();
@@ -25,9 +26,25 @@ private:
 	BreakoutFactory m_factory;
 	BreakoutSystem m_system;
 
-	RLTexture m_txtBall;
+	//RLTexture m_txtBall;
+
+	Texture m_txChecker;
+	Texture m_txEndzone;
+	Mesh m_meshPlane;
+	Material m_matPlane;
+	Material m_matEndzone;
+
+	Texture m_txBallShadow;
+	Mesh m_meshBallShadow;
+	Material m_matBallShadow;
 
 	Camera3D m_camera;
 	Entity m_player;
+	Entity m_endZone;
+
+	static constexpr float ROOM_WIDTH = 15.0f;
+	static constexpr float ROOM_HEIGHT = 12.0f;
+	static constexpr float ROOM_LENGTH = 25.0f;
+	static constexpr float END_ZONE = 24.0f;
 
 };

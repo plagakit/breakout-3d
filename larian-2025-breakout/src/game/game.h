@@ -33,12 +33,10 @@ private:
 	std::unique_ptr<Breakout> m_breakout;
 
 	// Scrolling background
-	static constexpr float SCROLL_BG_SPD = 50.0f;
-	static constexpr float SCROLL_BG_SPACING = 25.0f;
-	Vec2 SCROLL_BG_VELOCITY = { SCROLL_BG_SPD, SCROLL_BG_SPD };
+	//static constexpr float SCROLL_BG_SPD = 50.0f;
+	//static constexpr float SCROLL_BG_SPACING = 25.0f;
+	//Vec2 SCROLL_BG_VELOCITY = { SCROLL_BG_SPD, SCROLL_BG_SPD };
 
-	Vec2 m_scrollBGOffset = { 0.0f, 0.0f };
-
-	Image checked;
+	//Vec2 m_scrollBGOffset = { 0.0f, 0.0f };
 
 };
