@@ -120,7 +120,8 @@ void Breakout::Render()
 	EndMode3D();
 
 	m_system.RenderPlayerUI(m_player);
-	DrawText(TextFormat("%d", m_points), 0, 490, 32, WHITE);
+	DrawText(TextFormat("Lives: %d", m_lives), 0, 440, 32, WHITE);
+	DrawText(TextFormat("Points: %d", m_points), 0, 480, 32, WHITE);
 }
 
 void Breakout::RestartGame()

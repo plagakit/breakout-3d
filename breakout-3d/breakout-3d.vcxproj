@@ -22,7 +22,7 @@
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{6f60abdd-18e3-4c67-b29d-77809a4fadbf}</ProjectGuid>
-    <RootNamespace>larian2025breakout</RootNamespace>
+    <RootNamespace>breakout3d</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
     <ProjectName>breakout-3d</ProjectName>
   </PropertyGroup>
