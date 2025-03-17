@@ -33,10 +33,13 @@
     <ClCompile Include="src\game\breakout\breakout.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\game\breakout\breakout_factory.cpp">
+    <ClCompile Include="src\game\breakout\factories\breakout_factory.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\game\breakout\breakout_system.cpp">
+    <ClCompile Include="src\game\breakout\systems\breakout_system.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\game\breakout\factories\brick_generation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -80,13 +83,16 @@
     <ClInclude Include="src\game\breakout\breakout.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\game\breakout\breakout_components.h">
+    <ClInclude Include="src\game\breakout\components\breakout_components.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\game\breakout\breakout_system.h">
+    <ClInclude Include="src\game\breakout\systems\breakout_system.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\game\breakout\breakout_factory.h">
+    <ClInclude Include="src\game\breakout\factories\breakout_factory.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\game\breakout\factories\brick_generation.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

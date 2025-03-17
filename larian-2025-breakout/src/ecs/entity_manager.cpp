@@ -64,6 +64,11 @@ size_t EntityManager::Count() const
 //	return EntityView<>(*this, 0);
 //}
 
+EntityView<> EntityManager::All()
+{
+	return EntityView<>(*this, 0);
+}
+
 void EntityManager::DeleteEntity(Entity id)
 {
 	Signature s = m_signatures.Get(id);

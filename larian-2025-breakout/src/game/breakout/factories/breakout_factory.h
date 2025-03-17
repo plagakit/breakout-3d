@@ -2,6 +2,8 @@
 
 #include "math/math.h"
 #include "ecs/entity_manager.h"
+#include "game/breakout/components/breakout_components.h"
+#include "game/breakout/factories/brick_generation.h"
 #include <raylib.h>
 
 // A class that handles the creation of most game objects
@@ -18,15 +20,17 @@ public:
 	Entity CreatePlayer(const Vec3& position);
 	Entity CreatePlayerHitbox(const Vec3& position, const Vec3& returnDirection);
 
-	Entity CreateBall(const Vec3& position, float radius);
+	Entity CreateBall(const Vec3& position, const Vec3& velocity, float radius);
 	//Entity CreateBall(const Vec3& position, float radius, const Texture2D& texture);
 	Entity CreateBallParticle(const Vec3& position, const Vec3& velocity, const Vec3& acceleration, const Color& color);
 
-	Entity CreateBrick(const Vec3& position, const Vec3& size, int health);
-	void CreateBrickGrid(const Vec3& bottomLeft, const Vec3& topRight, const Vec3& slices, const Vec3& spacing, uint8_t health);
+	Entity CreateBrick(const Vec3& position, const Vec3& size, int health, Brick::Type type, const BrickTypeInfoArr& typeInfo);
+	void CreateBrickGrid(const Vec3& bottomLeft, const Vec3& topRight, const BrickGridGenerationParams& params, const BrickTypeInfoArr& typeInfo);
 
 private:
 	EntityManager& m_registry;
+
+	BrickGenerator m_brickGenerator;
 
 	static constexpr size_t PARTICLE_RESERVE = 500;
 	static constexpr size_t WALL_RESERVE = 6;

@@ -70,7 +70,7 @@ public:
 
 	// Views
 
-	//EntityView<> All();
+	EntityView<> All();
 
 	template<typename T, typename... Ts>
 	EntityView<T, Ts...> AllWith();

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "math/math.h"
+#include "ecs/entity.h"
 #include <raylib.h>
 
 // A collection of all the components to be used in the breakout
@@ -48,6 +49,13 @@ struct SphereMesh
 	int slices = 16;
 };
 
+struct BoxMesh
+{
+	Color color = BLUE;
+	Color outlineColor = DARKBLUE;
+	Vec3 size = { 1.0f, 1.0f, 1.0f };
+};
+
 // Misc.
 
 struct Particle
@@ -72,33 +80,52 @@ struct Player
 	static constexpr float CAMERA_MAX_PITCH = 1.0f;
 	static constexpr float CAMERA_MIN_PITCH = -1.0f;
 
-	// These could better be encapsulated by adding rotation to transforms
-	// but since players are the only thing that rotate in the game this works
+	// These could better be encapsulated by adding rotation to Transform3D
+	// but since players are the only thing that rotate in the game this works for now
 	float yaw = 0.0f;
 	float pitch = 0.0f;
 	Vec3 cameraForward = { 0.0f, 0.0f, 0.0f };
 
+	// Moving
+	enum MoveState
+	{
+		IDLE,
+		WALKING,
+		DASHING
+	};
+	MoveState moveState;
+
 	static constexpr float DEFAULT_SPEED = 10.0f;
 	float speed = DEFAULT_SPEED;
-
-	static constexpr float DEFAULT_JUMP_STR = 40.0f;
-	bool isGrounded = true;
-	float jumpStr = DEFAULT_JUMP_STR;
-
-	static constexpr float DEFAULT_ATTACK_COOLDOWN = 1.0f;
-	bool canAttack = true;
-	float attackCooldown = DEFAULT_ATTACK_COOLDOWN;
-	float liveAttackCooldown = 0.0f;
+	float dashSpeed = DEFAULT_SPEED * 4.0f;
+	Vec3 dashDirection = { 0.0f, 0.0f, 0.0f };
 
 	static constexpr float DEFAULT_DASH_COOLDOWN = 2.0f;
 	static constexpr float DASH_TIME = 0.5f;
 	bool canDash = true;
-	bool isDashing = false;
-	float liveDashTimer = DASH_TIME;
 	float dashCooldown = DEFAULT_DASH_COOLDOWN;
+	float liveDashTimer = DASH_TIME;
 	float liveDashCooldown = 0.0f;
-	float dashSpeed = DEFAULT_SPEED * 4.0f;
-	Vec3 dashDirection = { 0.0f, 0.0f, 0.0f };
+
+	// Jumping
+	// TODO: a proper state machine system, so we can reuse transitions
+	// ex. in air -> grounded sets vel.y = 0, if multiple areas in the code can
+	// trigger this then i think there should be some sort of general transition function to call
+	enum AirState
+	{
+		GROUNDED,
+		IN_AIR
+	};
+	AirState airState;
+
+	static constexpr float DEFAULT_JUMP_STR = 40.0f;
+	float jumpStr = DEFAULT_JUMP_STR;
+
+	// Attacking
+	static constexpr float DEFAULT_ATTACK_COOLDOWN = 1.0f;
+	bool canAttack = true;
+	float attackCooldown = DEFAULT_ATTACK_COOLDOWN;
+	float liveAttackCooldown = 0.0f;
 };
 
 struct PlayerHitbox
@@ -121,21 +148,22 @@ struct Wall
 
 struct Ball
 {
-	static constexpr float DEFAULT_RADIUS = 1.0f;
+	static constexpr float DEFAULT_RADIUS = 0.5f;
 	bool lastHitByPlayer = false;
 
 	// The ball can reach a speed above the hard limit, but then quickly damps down to soft limit
-	static constexpr float HARD_MAX_SPEED = 22.0f;
-	static constexpr float SOFT_MAX_SPEED = 15.0f;
+	static constexpr float HARD_MAX_SPEED = 30.0f;
+	static constexpr float SOFT_MAX_SPEED = 25.0f;
 	static constexpr float DAMP_RATE = 0.1f;
-	static constexpr float DEFAULT_SPEED = 13.0f;
+	static constexpr float MINIMUM_Z_SPEED = 9.0f; // make it so that player can't stall ball vertically
+	static constexpr float DEFAULT_SPEED = 12.0f;
 	static constexpr float PLAYER_HIT_SPEED_MULTIPLIER = 1.25f;
-	static constexpr float DEFAULT_GRAVITY_STRENGTH = 50.0f;
+	static constexpr float DEFAULT_GRAVITY_STRENGTH = 30.0f;
 
 	static constexpr Color NORMAL_PARTICLE_COLOR = Color{ 253, 249, 0, 100 };
 	static constexpr Color CURVE_PARTICLE_COLOR = Color{ 230, 41, 55, 100 };
 	static constexpr Color GRAVITY_PARTICLE_COLOR = Color{ 0, 121, 241, 100 };
-	static constexpr float PARTICLE_SPEED_THRESHOLD = SOFT_MAX_SPEED + 0.5f;
+	static constexpr float PARTICLE_SPEED_THRESHOLD = SOFT_MAX_SPEED + 0.1f;
 	static constexpr float PARTICLE_SPAWN_PERIOD = 0.1f;
 	static constexpr float PARTICLE_LIFETIME = 0.3f;
 	float particleSpawnTimer = PARTICLE_SPAWN_PERIOD;
@@ -143,7 +171,7 @@ struct Ball
 
 struct CurveModifier
 {
-	static constexpr float DEFAULT_CURVE_STRENGTH = 25.0f;
+	static constexpr float DEFAULT_CURVE_STRENGTH = 30.0f;
 	float strength = DEFAULT_CURVE_STRENGTH;
 	Vec3 direction = { 0.0f, 0.0f, 0.0f };
 };
@@ -156,6 +184,7 @@ struct Brick
 	int health = 1;
 	int points = 100;
 
+	static constexpr size_t TYPE_SIZE = 4;
 	enum Type
 	{
 		NORMAL,
@@ -163,5 +192,7 @@ struct Brick
 		GRAVITY,
 		ADD_BALLS
 	};
-	Type type = Type::CURVE;
+	Type type = Type::NORMAL;
+
+	static constexpr int ADD_BALLS_AMT = 3;
 };

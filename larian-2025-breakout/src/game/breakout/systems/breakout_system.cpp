@@ -1,8 +1,8 @@
 #include "breakout_system.h"
 
-#include "game/breakout/breakout_components.h"
-#include "math/collision_solver.h"
 #include "game/game.h"
+#include "math/collision_solver.h"
+#include "game/breakout/components/breakout_components.h"
 #include <raylib.h>
 #include <rlgl.h>
 #include <iostream>
@@ -43,37 +43,45 @@ void BreakoutSystem::UpdatePlayerCamera(float dt, Camera3D& camera, Entity playe
 	camera.position = camera.target - targetLocal;
 
 	// And do similar for target pos to match pitch
-	//std::cout << pData.cameraPitch << std::endl;
 	pData.pitch = std::clamp(pData.pitch, Player::CAMERA_MIN_PITCH, Player::CAMERA_MAX_PITCH);
 	Vec3 forward = Vector3Normalize(camera.target - camera.position);
 	Vec3 right = Vector3CrossProduct(forward, up);
 	targetLocal = Vector3RotateByAxisAngle(targetLocal, right, pData.pitch);
 	camera.position = camera.target - targetLocal;
 
-	// And make sure it doesn't clip into any walls
-	//for (auto [id, wall, tf, box] : m_registry.AllWith<Wall, Transform3D, AABBCollider>())
-	//{
-	//	CollisionData data = { camera.position, tf.position };
-	//	SphereCollider cameraCollider = { 0.01f };
-	//	CollisionResult result = CollisionSolver::Solve(data, cameraCollider, box);
-	//	if (result.hit)
-	//	{
-	//		camera.position -= result.restitution;// *2.0f;
+	Vec3 delta = camera.target - camera.position;
 
-	//		// Do another test so the camera isn't right up against the wall
-	//		// and makes the wall invisible?
-	//		//SphereCollider widerCollider = { 0.01f };
-	//		//CollisionResult wideResult = CollisionSolver::Solve(data, widerCollider, box);
-	//		//camera.position -= wideResult.restitution;
-	//		
-	//		// Push the target out of the wall?
-	//		//CollisionData data2 = { camera.target, tf.position };
-	//		//SphereCollider targetCollider = { 1.0f };
-	//		//CollisionResult result2 = CollisionSolver::Solve(data2, targetCollider, box);
-	//		//if (result2.hit)
-	//		//	camera.target += result2.restitution;
-	//	}
-	//}
+	// And make sure it doesn't clip into any walls
+	for (auto [id, wall, tf, box] : m_registry.AllWith<Wall, Transform3D, AABBCollider>())
+	{
+		CollisionData data = { camera.position, tf.position };
+		SphereCollider cameraCollider = { 0.001f };
+		CollisionResult result = CollisionSolver::Solve(data, cameraCollider, box);
+		if (result.hit)
+		{
+			camera.position -= result.restitution * 1.1f;
+
+			// Do another test so the camera isn't right up against the wall
+			// and makes the wall invisible?
+			//SphereCollider widerCollider = { 0.01f };
+			//CollisionResult wideResult = CollisionSolver::Solve(data, widerCollider, box);
+			//camera.position -= wideResult.restitution;
+			
+			// Push the target out of the wall?
+			//CollisionData data2 = { camera.target, tf.position };
+			//SphereCollider targetCollider = { 1.0f };
+			//CollisionResult result2 = CollisionSolver::Solve(data2, targetCollider, box);
+			//if (result2.hit)
+			//	camera.target += result2.restitution;
+
+			// Option 3: keep the same rotation as before but just shift it over
+			camera.target = camera.position + delta;
+
+			// I think the best option would be to shoot a raycast out of the target
+			// towards the camera position to "zoom in" when we're moving out of a wall,
+			// but I don't have the time to code that up
+		}
+	}
 
 	pData.cameraForward = Vector3Normalize(camera.target - camera.position);
 }
@@ -86,18 +94,70 @@ void BreakoutSystem::UpdatePlayer(float dt, Entity player)
 	CapsuleMesh& pMesh = m_registry.Get<CapsuleMesh>(player);
 
 	// Jump behaviour
-	if (pData.isGrounded)
+	if (pData.airState == Player::AirState::GROUNDED)
 	{
 		pGrav.enabled = false;
 
 		if (IsKeyPressed(KEY_SPACE))
 		{
-			pData.isGrounded = false;
+			pData.airState = Player::AirState::IN_AIR;
 			pGrav.enabled = true;
 			pTransform.velocity.y = pData.jumpStr;
 		}
 	}
 	
+	// Movement behaviour
+	pData.liveDashCooldown -= dt;
+	pData.canDash = pData.liveDashCooldown <= 0.0f
+		&& pData.moveState == Player::MoveState::WALKING;
+
+	if (pData.moveState == Player::MoveState::DASHING)
+	{
+		float dashProgress = pData.liveDashTimer / Player::DASH_TIME;
+		pData.liveDashTimer -= dt;
+		if (pData.liveDashTimer <= 0.0f)
+		{
+			pData.moveState = Player::MoveState::WALKING;
+			pData.liveDashTimer = 0.0f;
+			pGrav.enabled = true;
+			pTransform.velocity = { 0.0f, 0.0f, 0.0f };
+		}
+		else
+		{
+			// Interpolate dash speed to walk speed
+			Vec3 fromVel = pData.dashDirection * pData.dashSpeed;
+			Vec3 toVel = pData.dashDirection * pData.speed;
+			float t = dashProgress;// *dashProgress; linear feels better than squared
+			pTransform.velocity = fromVel * t + toVel * (1.0f - t);
+		}
+	}
+	else // moveState == walking or idle
+	{
+		// Horizontal movement
+		float xMove = static_cast<float>(IsKeyDown('A')) - static_cast<float>(IsKeyDown('D'));
+		float zMove = static_cast<float>(IsKeyDown('W')) - static_cast<float>(IsKeyDown('S'));
+		Vec3 move = Vector3RotateByAxisAngle({ xMove, 0.0f, zMove }, { 0.0f, 1.0f, 0.0f }, pData.yaw);
+
+		// Perform dash
+		if (pData.canDash && IsKeyPressed(KEY_LEFT_SHIFT))
+		{
+			pData.moveState = Player::MoveState::DASHING;
+			pData.liveDashCooldown = pData.dashCooldown;
+			pData.liveDashTimer = Player::DASH_TIME;
+			pData.dashDirection = move;
+			pGrav.enabled = false;
+		}
+		else if (std::abs(xMove) > EPSILON || std::abs(zMove) > EPSILON)
+		{
+			pData.moveState = Player::MoveState::WALKING;
+			pTransform.position += move * pData.speed * dt;
+		}
+		else
+		{
+			pData.moveState = Player::MoveState::IDLE;
+		}
+	}
+
 	// Attack behaviour
 	if (pData.canAttack)
 	{
@@ -116,51 +176,6 @@ void BreakoutSystem::UpdatePlayer(float dt, Entity player)
 		pData.liveAttackCooldown -= dt;
 		if (pData.liveAttackCooldown <= 0.0f)
 			pData.canAttack = true;
-	}
-
-	// Movement behaviour
-	if (pData.isDashing)
-	{
-		float dashProgress = pData.liveDashTimer / Player::DASH_TIME;
-		pData.liveDashTimer -= dt;
-		if (pData.liveDashTimer <= 0.0f)
-		{
-			pData.isDashing = false;
-			pData.liveDashTimer = 0.0f;
-			pGrav.enabled = true;
-			pTransform.velocity = { 0.0f, 0.0f, 0.0f };
-		}
-		else
-		{
-			// Interpolate dash speed to walk speed
-			Vec3 fromVel = pData.dashDirection * pData.dashSpeed;
-			Vec3 toVel = pData.dashDirection * pData.speed;
-			float t = dashProgress;// *dashProgress; linear feels better than squared
-			pTransform.velocity = fromVel * t + toVel * (1.0f - t);
-		}
-	}
-	else
-	{
-		// Horizontal movement
-		float xMove = static_cast<float>(IsKeyDown('A')) - static_cast<float>(IsKeyDown('D'));
-		float zMove = static_cast<float>(IsKeyDown('W')) - static_cast<float>(IsKeyDown('S'));
-		Vec3 move = Vector3RotateByAxisAngle({ xMove, 0.0f, zMove }, { 0.0f, 1.0f, 0.0f }, pData.yaw);
-		pTransform.position += move * pData.speed * dt;
-
-		pData.liveDashCooldown -= dt;
-		if (pData.liveDashCooldown <= 0.0f)
-			pData.canDash = true;
-
-		// Perform dash
-		if (pData.canDash && IsKeyPressed(KEY_LEFT_SHIFT))
-		{
-			pData.canDash = false;
-			pData.isDashing = true;
-			pData.liveDashCooldown = pData.dashCooldown;
-			pData.liveDashTimer = Player::DASH_TIME;
-			pData.dashDirection = move;
-			pGrav.enabled = false;
-		}
 	}
 }
 
@@ -272,6 +287,11 @@ void BreakoutSystem::UpdateBalls(float dt)
 			tf.velocity = tf.velocity * (newSpeed / speed);
 		}
 
+		// Make it so that player can't vertically stall the ball - they gotta be on their toes ;)
+		tf.velocity.z = tf.velocity.z < 0.0f
+			? std::min(tf.velocity.z, -Ball::MINIMUM_Z_SPEED)
+			: std::max(tf.velocity.z, Ball::MINIMUM_Z_SPEED);
+
 		// Spawn particles
 		if (speed >= Ball::PARTICLE_SPEED_THRESHOLD)
 		{
@@ -300,6 +320,8 @@ void BreakoutSystem::ApplyBallModifiers(float dt)
 	{
 		tf.velocity += curve.direction * curve.strength * dt;
 	}
+
+	// Gravity is handled in movement
 }
 
 int BreakoutSystem::DeleteBricksAndGetPoints()
@@ -357,12 +379,14 @@ void BreakoutSystem::OnBallHitWall(Entity ball, Entity wall, const CollisionResu
 	Ball& ballData = m_registry.Get<Ball>(ball);
 	ballData.lastHitByPlayer = false;
 
-	// Remove modifiers
-	if (m_registry.Has<Gravity>(ball))
-		m_registry.Remove<Gravity>(ball);
-
+	// Remove curve if hitting the wall we're curving into
 	if (m_registry.Has<CurveModifier>(ball))
-		m_registry.Remove<CurveModifier>(ball);
+	{
+		CurveModifier& modifier = m_registry.Get<CurveModifier>(ball);
+		float dot = Vector3DotProduct(modifier.direction, result.contactNormal);
+		if (dot <= -1.0f + EPSILON)
+			m_registry.Remove<CurveModifier>(ball);
+	}
 }
 
 void BreakoutSystem::OnBallHitBrick(Entity ball, Entity brick, const CollisionResult& result)
@@ -378,6 +402,49 @@ void BreakoutSystem::OnBallHitBrick(Entity ball, Entity brick, const CollisionRe
 	// Brick behaviour
 	Brick& brickData = m_registry.Get<Brick>(brick);
 	brickData.health--;
+
+	// Apply modifiers
+	if (brickData.type == Brick::Type::CURVE)
+	{
+		if (!m_registry.Has<CurveModifier>(ball))
+			m_registry.Add<CurveModifier>(ball, {});
+
+		// Curve towards farthest wall on one axis - since we are centered at 0,0 its opposite of position
+		CurveModifier& modifier = m_registry.Get<CurveModifier>(ball);
+		if (std::abs(ballTF.position.x) > std::abs(ballTF.position.y))
+		{
+			modifier.direction = { ballTF.position.x > 0.0f ? -1.0f : 1.0f, 0.0f, 0.0f };
+			ballTF.velocity.x = 0.0f;
+		}
+		else
+		{
+			modifier.direction = { 0.0f, ballTF.position.y > 0.0f ? -1.0f : 1.0f, 0.0f };
+			ballTF.velocity.y = 0.0f;
+		}
+		modifier.strength = CurveModifier::DEFAULT_CURVE_STRENGTH;
+	}
+	else if (brickData.type == Brick::Type::GRAVITY)
+	{
+		if (!m_registry.Has<Gravity>(ball))
+			m_registry.Add<Gravity>(ball, {});
+
+		Gravity& modifier = m_registry.Get<Gravity>(ball);
+		modifier.enabled = true;
+		modifier.strength = Ball::DEFAULT_GRAVITY_STRENGTH;
+	}
+	else if (brickData.type == Brick::Type::ADD_BALLS)
+	{
+		Vec3 dirs[Brick::ADD_BALLS_AMT];
+		GenerateVectorsInCone(result.contactNormal, DEG2RAD * 30.0f, Brick::ADD_BALLS_AMT, dirs);
+
+		float speed = Vector3Length(ballTF.velocity);
+		ballTF.velocity = dirs[0] * speed;
+		for (int i = 1; i < Brick::ADD_BALLS_AMT; i++)
+		{
+			Vec3 vel = dirs[i] * speed;
+			m_factory.CreateBall(ballTF.position, vel, Ball::DEFAULT_RADIUS);
+		}
+	}
 }
 
 void BreakoutSystem::OnBallHitHitbox(Entity ball, Entity hitbox, const CollisionResult& result)
@@ -391,6 +458,13 @@ void BreakoutSystem::OnBallHitHitbox(Entity ball, Entity hitbox, const Collision
 	
 	// Set data
 	m_registry.Get<Ball>(ball).lastHitByPlayer = true;
+
+	// Remove modifiers
+	if (m_registry.Has<Gravity>(ball))
+		m_registry.Remove<Gravity>(ball);
+
+	if (m_registry.Has<CurveModifier>(ball))
+		m_registry.Remove<CurveModifier>(ball);
 }
 
 void BreakoutSystem::OnPlayerHitWall(Entity player, Entity wall, const CollisionResult& result)
@@ -402,7 +476,8 @@ void BreakoutSystem::OnPlayerHitWall(Entity player, Entity wall, const Collision
 	if (wallData.isGround)
 	{
 		Player& playerData = m_registry.Get<Player>(player);
-		playerData.isGrounded = true;
+
+		playerData.airState = Player::AirState::GROUNDED;
 		playerTF.velocity.y = 0.0f;
 		playerTF.acceleration.y = 0.0f;
 	}
@@ -450,8 +525,8 @@ void BreakoutSystem::RenderWalls(const Mesh& mesh, const Material& mat)
 
 void BreakoutSystem::RenderPrimitiveEntities(const Camera3D& camera)
 {
-	// Draw players
-	for (auto [id, player, mesh, tf] : m_registry.AllWith<Player, CapsuleMesh, Transform3D>())
+	// Draw capsules
+	for (auto [id, mesh, tf] : m_registry.AllWith<CapsuleMesh, Transform3D>())
 	{
 		Vec3 half = { 0.0f, mesh.height * 0.5f - mesh.radius, 0.0f };
 		Vec3 start = tf.position - half;
@@ -460,18 +535,23 @@ void BreakoutSystem::RenderPrimitiveEntities(const Camera3D& camera)
 		DrawCapsuleWires(start, end, mesh.radius, mesh.segments, mesh.rings, mesh.outlineColor);
 	}
 
-	// Draw bricks
-	for (auto [id, brick, tf, aabb] : m_registry.AllWith<Brick, Transform3D, AABBCollider>())
+	// Draw boxes
+	for (auto [id, box, tf] : m_registry.AllWith<BoxMesh, Transform3D>())
 	{
-		DrawCube(tf.position, aabb.width, aabb.height, aabb.length, BLUE);
-		DrawCubeWires(tf.position, aabb.width, aabb.height, aabb.length, DARKBLUE);
+		DrawCubeV(tf.position, box.size, box.color);
+		DrawCubeWiresV(tf.position, box.size, box.outlineColor);
 
-#ifdef _DEBUG
-		EndMode3D();
-		Vec2 screenPos = GetWorldToScreen(tf.position, camera);
-		DrawText(TextFormat("%d", brick.health), static_cast<int>(screenPos.x), static_cast<int>(screenPos.y), 32, WHITE);
-		BeginMode3D(camera);
-#endif
+		// Draw brick health
+//#ifdef _DEBUG
+//		if (m_registry.Has<Brick>(id))
+//		{
+//			EndMode3D();
+//			const Brick& brick = m_registry.Get<Brick>(id);
+//			Vec2 screenPos = GetWorldToScreen(tf.position, camera);
+//			DrawText(TextFormat("%d", brick.health), static_cast<int>(screenPos.x), static_cast<int>(screenPos.y), 32, WHITE);
+//			BeginMode3D(camera);
+//		}
+//#endif
 	}
 
 	// Draw spheres
@@ -491,9 +571,6 @@ void BreakoutSystem::RenderPrimitiveEntities(const Camera3D& camera)
 		DrawSphereWires(tf.position, col.radius, 10, 10, BLUE);
 		DrawSphere(tf.position, col.radius, { 0, 0, 255, 100 });
 	}
-
-	for (auto [id, sp, tf] : m_registry.AllWith<SphereCollider, Transform3D>())
-		DrawSphere(tf.position, sp.radius, { 100, 0, 100, 100 });
 }
 
 void BreakoutSystem::RenderBallShadows(const Mesh& quad, const Material& mat)
@@ -510,15 +587,8 @@ void BreakoutSystem::RenderEndzone(Entity endZone, const Mesh& mesh, const Mater
 	const Transform3D& tf = m_registry.Get<Transform3D>(endZone);
 	const Wall& wall = m_registry.Get<Wall>(endZone);
 	Matrix scale = MatrixScale(wall.planeSize.x, 1.0f, wall.planeSize.y);
-
-	// Rotate plane such that up faces the normal
-	//float dot = Vector3DotProduct({ 0.0f, 1.0f, 0.0f }, wall.normal);
-	//float angle = std::acosf(dot);
-	//Vec3 axis = Vector3CrossProduct({ 0.0f, 1.0f, 0.0f }, wall.normal);
-	//Matrix rotate = MatrixRotate(axis, angle);
-
 	Matrix translate = MatrixTranslate(tf.position.x, tf.position.y, tf.position.z);
-	DrawMesh(mesh, mat, scale /** rotate*/ * translate);
+	DrawMesh(mesh, mat, scale * translate);
 }
 
 void BreakoutSystem::RenderPlayerUI(Entity player)
@@ -528,6 +598,10 @@ void BreakoutSystem::RenderPlayerUI(Entity player)
 	int middleY = Game::SCREEN_HEIGHT / 2;
 	DrawLine(middleX - 5, middleY, middleX + 5, middleY, RAYWHITE);
 	DrawLine(middleX, middleY - 5, middleX, middleY + 5, RAYWHITE);
+
+	// Controls
+	DrawText("Move: WASD", 10, 520, 24, WHITE);
+	DrawText("Jump: SPACE", 10, 550, 24, WHITE);
 
 	// Draw cooldown bars
 	const Player& pData = m_registry.Get<Player>(player);
@@ -556,6 +630,55 @@ Vec3 BreakoutSystem::Reflect(const Vec3& direction, const Vec3& normal) const
 Vec3 BreakoutSystem::RandomPointInSphere() const
 {
 	return Vector3Normalize({ randf(), randf(), randf() }) * randf();
+}
+
+void BreakoutSystem::GenerateVectorsInCone(Vector3 direction, float tiltAngle, int n, Vec3 out[])
+{
+	/*
+	* Tilt the direction vector to create n vectors in a circle around it
+	* 
+	* Example:
+	* n = 2, tiltAngle = A = 30 degrees
+	* 
+	*       direction
+			 XXX^XXX     
+		   ^X   |   X^   
+		  X \   |   / X  
+		 X   \  |  /   X 
+		X     \A| /     X
+		X      \./      X	
+
+	* I dunno how else to explain this. I coded this myself :p
+	*/
+
+	// Generate points tilted around (0, 1, 0) with spherical coordinate formula
+	for (int i = 0; i < n; i++)
+	{
+		float azimuth = (float)i / n * 2.0f * PI;
+		float x = sinf(tiltAngle) * cosf(azimuth);
+		float y = cosf(tiltAngle);
+		float z = sinf(tiltAngle) * sinf(azimuth);
+		out[i] = { x, y, z };
+	}
+
+	// Align up to target direction
+	Quaternion rot;
+	Vec3 axis = Vector3CrossProduct({ 0.0f, 1.0f, 0.0f }, direction);
+	if (Vector3Length(axis) < EPSILON) // if target direction parallel w/ up
+	{
+		rot = direction.y < 0
+			? QuaternionFromAxisAngle({ 1.0f, 0.0f, 0.0f }, PI)
+			: QuaternionIdentity();
+	}
+	else
+	{
+		float angle = std::acos(Vector3DotProduct({ 0.0f, 1.0f, 0.0f }, direction));
+		rot = QuaternionFromAxisAngle(axis, angle);
+	}
+
+	// Now rotate all the vectors
+	for (int i = 0; i < n; i++)
+		out[i] = Vector3RotateByQuaternion(out[i], rot);
 }
 
 #pragma endregion

@@ -6,6 +6,8 @@ Game::Game()
 {
 	DisableCursor();
 	rlEnableDepthTest();
+	srand(static_cast<unsigned int>(time(NULL)));
+
 	m_breakout = std::make_unique<Breakout>(m_registry);
 }
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ecs/entity_manager.h"
-#include "game/breakout/breakout_factory.h"
+#include "game/breakout/factories/breakout_factory.h"
 #include "math/collision_solver.h"
 #include <raylib.h>
 
@@ -54,5 +54,6 @@ private:
 	// Helpers
 	Vec3 Reflect(const Vec3& direction, const Vec3& normal) const;
 	Vec3 RandomPointInSphere() const;
+	void GenerateVectorsInCone(Vector3 direction, float tiltAngle, int n, Vec3 out[]);
 
 };

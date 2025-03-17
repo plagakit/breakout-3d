@@ -1,6 +1,6 @@
 #include "breakout_factory.h"
 
-#include "game/breakout/breakout_components.h"
+#include "game/breakout/components/breakout_components.h"
 
 BreakoutFactory::BreakoutFactory(EntityManager& registry) :
 	m_registry(registry)
@@ -15,6 +15,7 @@ void BreakoutFactory::RegisterRequiredComponents()
 	m_registry.RegisterComponentType<Particle>(PARTICLE_RESERVE);
 
 	m_registry.RegisterComponentType<Brick>(BRICK_RESERVE);
+	m_registry.RegisterComponentType<BoxMesh>(BRICK_RESERVE);
 	m_registry.RegisterComponentType<AABBCollider>(BRICK_RESERVE + WALL_RESERVE + PLAYER_RESERVE);
 	m_registry.RegisterComponentType<Wall>(WALL_RESERVE);
 
@@ -122,12 +123,13 @@ Entity BreakoutFactory::CreatePlayerHitbox(const Vec3& position, const Vec3& ret
 	return e;
 }
 
-Entity BreakoutFactory::CreateBall(const Vec3& position, float radius/*, const Texture2D& texture*/)
+Entity BreakoutFactory::CreateBall(const Vec3& position, const Vec3& velocity, float radius/*, const Texture2D& texture*/)
 {
 	Entity e = m_registry.CreateEntity();
 
 	Transform3D tf;
 	tf.position = position;
+	tf.velocity = velocity;
 	m_registry.Add<Transform3D>(e, tf);
 
 	SphereCollider col;
@@ -142,7 +144,7 @@ Entity BreakoutFactory::CreateBall(const Vec3& position, float radius/*, const T
 	SphereMesh mesh;
 	mesh.radius = radius;
 	mesh.color = RAYWHITE;
-	mesh.outlineColor = WHITE;
+	mesh.outlineColor = { 170, 170, 170, 255 };
 	mesh.rings = 8;
 	mesh.slices = 16;
 	m_registry.Add<SphereMesh>(e, mesh);
@@ -176,7 +178,7 @@ Entity BreakoutFactory::CreateBallParticle(const Vec3& position, const Vec3& vel
 	return e;
 }
 
-Entity BreakoutFactory::CreateBrick(const Vec3& position, const Vec3& size, int health)
+Entity BreakoutFactory::CreateBrick(const Vec3& position, const Vec3& size, int health, Brick::Type type, const BrickTypeInfoArr& typeInfos)
 {
 	Entity e = m_registry.CreateEntity();
 
@@ -190,31 +192,70 @@ Entity BreakoutFactory::CreateBrick(const Vec3& position, const Vec3& size, int 
 	col.length = size.z;
 	m_registry.Add<AABBCollider>(e, col);
 
+	BoxMesh mesh;
+	mesh.size = size;
+	mesh.color = typeInfos[type].color;
+	mesh.outlineColor = typeInfos[type].outlineColor;
+	m_registry.Add<BoxMesh>(e, mesh);
+
 	Brick brick;
 	brick.health = health;
+	brick.type = type;
+	brick.points = typeInfos[type].points;
 	m_registry.Add<Brick>(e, brick);
 
 	return e;
 }
 
-void BreakoutFactory::CreateBrickGrid(const Vec3& bottomLeft, const Vec3& topRight, const Vec3& slices, const Vec3& spacing, uint8_t health)
+void BreakoutFactory::CreateBrickGrid(
+	const Vec3& bottomLeft, 
+	const Vec3& topRight, 
+	const BrickGridGenerationParams& params, 
+	const BrickTypeInfoArr& typeInfos)
 {
-	Vec3 totalSize = topRight - bottomLeft;
-	Vec3 totalSpacing = Vec3{ slices.x - 1, slices.y - 1, slices.z - 1 } * spacing;
-	Vec3 size = (totalSize - totalSpacing) / slices;
+	m_brickGenerator.Reset();
 
-	for (int i = 0; i < slices.x; i++)
+	Vec3 totalSize = topRight - bottomLeft;
+	Vec3 totalSpacing = Vec3{ params.slices.x - 1, params.slices.y - 1, params.slices.z - 1 } * params.spacing;
+	Vec3 size = (totalSize - totalSpacing) / params.slices;
+
+	for (int i = 0; i < params.slices.x; i++)
 	{
-		for (int j = 0; j < slices.y; j++)
+		for (int j = 0; j < params.slices.y; j++)
 		{
-			for (int k = 0; k < slices.z; k++)
+			for (int k = 0; k < params.slices.z; k++)
 			{
-				float x = bottomLeft.x + (size.x + spacing.x) * i;
-				float y = bottomLeft.y + (size.y + spacing.y) * j;
-				float z = bottomLeft.z + (size.z + spacing.z) * k;
+				float x = bottomLeft.x + (size.x + params.spacing.x) * i;
+				float y = bottomLeft.y + (size.y + params.spacing.y) * j;
+				float z = bottomLeft.z + (size.z + params.spacing.z) * k;
 				Vec3 pos = Vec3{ x, y, z } + size * 0.5f;
-				CreateBrick(pos, size, health);
+
+				CreateBrick(pos, size, params.health, m_brickGenerator.Next(params), typeInfos);
 			}
 		}
 	}
 }
+
+//Brick::Type BreakoutFactory::GenerateBrickType(const BrickGridGenerationParams& params)
+//{
+//	const float total = params.gravBrickChance
+//		+ params.curveBrickChance
+//		+ params.addBallBrickChance;
+//
+//	// Normalize if goes over 1
+//	const float norm = total > 1.0f ? 1.0f / total : 1.0f;
+//
+//	const float pick = randf();
+//	float accum = 0.0f;
+//
+//	accum += params.gravBrickChance * norm;
+//	if (pick < accum) return Brick::GRAVITY;
+//
+//	accum += params.curveBrickChance * norm;
+//	if (pick < accum) return Brick::CURVE;
+//
+//	accum += params.addBallBrickChance * norm;
+//	if (pick < accum) return Brick::ADD_BALLS;
+//
+//	return Brick::NORMAL;
+//}

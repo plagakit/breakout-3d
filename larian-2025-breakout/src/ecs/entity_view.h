@@ -3,7 +3,7 @@
 // Taken from my Ubisoft NEXT 2025 ECS code
 // https://github.com/plagakit/ubisoft-next-2025/blob/main/Engine/src/entity/entity_manager/entity_view.h
 
-// I rewrote the entire class to use pointer members instead of
+// I rewrote the entire class specialization of <T, Ts...> to use pointer members instead of
 // reference members so that the iterators could be used with
 // std::for_each and the parallel execution policy. This also
 // pointer and reference types for the iterator.
@@ -13,6 +13,54 @@
 // parallelized - so I should do that
 
 // INCLUDED AT END OF entity_manager.h B/C OF CIRCULAR DEPENDENCIES w/ TEMPLATE CLASSES
+
+/**
+* The empty EntityView specialization allows you to iterate over all
+* entities, returning every Entity UID in no particular order.
+*/
+template <>
+class EntityView<>
+{
+public:
+    using iterator_category = std::forward_iterator_tag;
+    using difference_type = std::ptrdiff_t;
+    using value_type = Entity;
+
+    EntityView(EntityManager& em, size_t denseIdx) :
+        m_em(em), m_denseIdx(denseIdx)
+    {}
+
+    value_type operator*() const
+    {
+        return m_em.m_signatures.m_dense[m_denseIdx];
+    }
+
+    EntityView& operator++()
+    {
+        m_denseIdx++;
+        return *this;
+    }
+
+    EntityView begin()
+    {
+        // idx 1 b/c idx 0 is null entity (invalid UID)
+        return EntityView(m_em, 1);
+    }
+
+    EntityView end()
+    {
+        // + 1 for null entity
+        size_t lastEntity = m_em.m_signatures.Size() + 1;
+        return EntityView(m_em, lastEntity);
+    }
+
+    friend bool operator==(const EntityView& a, const EntityView& b) { return a.m_denseIdx == b.m_denseIdx; }
+    friend bool operator!=(const EntityView& a, const EntityView& b) { return a.m_denseIdx != b.m_denseIdx; }
+
+private:
+    EntityManager& m_em;
+    size_t m_denseIdx;
+};
 
 template <typename T, typename... Ts>
 class EntityView<T, Ts...>
