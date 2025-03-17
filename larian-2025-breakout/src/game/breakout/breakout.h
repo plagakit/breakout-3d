@@ -50,7 +50,7 @@ private:
 
 	static constexpr int DEFAULT_LIVES = 3;
 	static constexpr Vec3 PLAYER_START_POS = { 0.0f, 1.5f, 0.0f };
-	static constexpr Vec3 BALL_START_POS = { 0.0f, 4.0f, 3.0f };
+	static constexpr Vec3 BALL_START_POS = { 0.0f, 5.0f, 3.0f };
 	static constexpr float ROUND_START_TRANS_TIME = 2.0f;
 	static constexpr float ROUND_END_TRANS_TIME = 1.0f;
 

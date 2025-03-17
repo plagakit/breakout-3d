@@ -10,8 +10,8 @@ RLTexture::RLTexture(const std::string& path)
 RLTexture::RLTexture(const std::string& path, float width, float height) :
 	RLTexture(path)
 {
-	m_texture.width = width;
-	m_texture.height = height;
+	m_texture.width = static_cast<int>(width);
+	m_texture.height = static_cast<int>(height);
 }
 
 RLTexture::~RLTexture()
