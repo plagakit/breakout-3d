@@ -21,6 +21,8 @@ void BreakoutSystem::UpdateParticles(float dt)
 	}
 }
 
+#pragma region Player Movement
+
 void BreakoutSystem::UpdatePlayerCamera(float dt, Camera3D& camera, Entity player)
 {
 	// Set camera to follow player
@@ -48,13 +50,11 @@ void BreakoutSystem::UpdatePlayerCamera(float dt, Camera3D& camera, Entity playe
 	targetLocal = Vector3RotateByAxisAngle(targetLocal, right, pData.pitch);
 	camera.position = camera.target - targetLocal;
 
-	// v this code was too buggy to include
-	
 	// And make sure it doesn't clip into any walls
 	//for (auto [id, wall, tf, box] : m_registry.AllWith<Wall, Transform3D, AABBCollider>())
 	//{
 	//	CollisionData data = { camera.position, tf.position };
-	//	SphereCollider cameraCollider = { 1.0f };
+	//	SphereCollider cameraCollider = { 0.01f };
 	//	CollisionResult result = CollisionSolver::Solve(data, cameraCollider, box);
 	//	if (result.hit)
 	//	{
@@ -67,11 +67,11 @@ void BreakoutSystem::UpdatePlayerCamera(float dt, Camera3D& camera, Entity playe
 	//		//camera.position -= wideResult.restitution;
 	//		
 	//		// Push the target out of the wall?
-	//		CollisionData data2 = { camera.target, tf.position };
-	//		SphereCollider targetCollider = { 1.0f };
-	//		CollisionResult result2 = CollisionSolver::Solve(data2, targetCollider, box);
-	//		if (result2.hit)
-	//			camera.target += result2.restitution;
+	//		//CollisionData data2 = { camera.target, tf.position };
+	//		//SphereCollider targetCollider = { 1.0f };
+	//		//CollisionResult result2 = CollisionSolver::Solve(data2, targetCollider, box);
+	//		//if (result2.hit)
+	//		//	camera.target += result2.restitution;
 	//	}
 	//}
 
@@ -162,9 +162,11 @@ void BreakoutSystem::UpdatePlayer(float dt, Entity player)
 			pGrav.enabled = false;
 		}
 	}
-
-	std::cout << pTransform.position.x << " " << pTransform.position.y << " " << pTransform.position.z << std::endl;
 }
+
+#pragma endregion
+
+#pragma region General Movement & Physics
 
 // 3D Movement
 
@@ -191,13 +193,19 @@ void BreakoutSystem::UpdateMovement(float dt)
 	);
 }
 
-void BreakoutSystem::ProcessBallCollisions()
+void BreakoutSystem::ProcessCollisions()
 {
+	// In this system we pick and choose which groups of entities we 
+	// want to collide. In a larger engine, I think this would take
+	// the form of collision groups/layers
+
 	auto balls = m_registry.AllWith<Ball, Transform3D, SphereCollider>();
 	auto bricks = m_registry.AllWith<Brick, Transform3D, AABBCollider>();
 	auto playerHitboxes = m_registry.AllWith<PlayerHitbox, Transform3D, SphereCollider>();
 	auto walls = m_registry.AllWith<Wall, Transform3D, AABBCollider>();
+	auto players = m_registry.AllWith<Player, Transform3D, AABBCollider>();
 
+	// Ball vs. ...
 	for (auto [blid, ball, bltf, blcol] : balls)
 	{
 		// Ball vs. Wall
@@ -206,18 +214,7 @@ void BreakoutSystem::ProcessBallCollisions()
 			CollisionData data = { bltf.position, wtf.position };
 			CollisionResult result = CollisionSolver::Solve(data, blcol, wcol);
 			if (result.hit)
-			{
-				// Adjust ball position & velocity
-				bltf.position += result.restitution;
-				if (std::abs(result.contactNormal.x) > EPSILON)
-					bltf.velocity.x *= -1.0f;
-				if (std::abs(result.contactNormal.y) > EPSILON)
-					bltf.velocity.y *= -1.0f;
-				if (std::abs(result.contactNormal.z) > EPSILON)
-					bltf.velocity.z *= -1.0f;
-
-				ball.wasJustHitByPlayer = false;
-			}
+				OnBallHitWall(blid, wid, result);
 		}
 
 		// Ball vs. Brick
@@ -226,24 +223,12 @@ void BreakoutSystem::ProcessBallCollisions()
 			CollisionData data = { bltf.position, brtf.position };
 			CollisionResult result = CollisionSolver::Solve(data, blcol, brcol);
 			if (result.hit)
-			{
-				// Adjust ball position & velocity
-				bltf.position += result.restitution;
-				if (std::abs(result.contactNormal.x) > EPSILON)
-					bltf.velocity.x *= -1.0f;
-				if (std::abs(result.contactNormal.y) > EPSILON)
-					bltf.velocity.y *= -1.0f;
-				if (std::abs(result.contactNormal.z) > EPSILON)
-					bltf.velocity.z *= -1.0f;
-
-				// Set data
-				brick.wasJustHit = true;
-				ball.wasJustHitByPlayer = false;
-			}
+				OnBallHitBrick(blid, brid, result);
 		}
 
-		// Ball vs. Player hitbox
-		if (ball.wasJustHitByPlayer)
+		// Ball vs. PlayerHitbox
+		// debounce - a ball must bounce off smth before being hit by a hitbox again
+		if (ball.lastHitByPlayer) 
 			continue;
 
 		for (auto [hbid, hitbox, hbtf, hbcol] : playerHitboxes)
@@ -251,40 +236,27 @@ void BreakoutSystem::ProcessBallCollisions()
 			CollisionData data = { bltf.position, hbtf.position };
 			CollisionResult result = CollisionSolver::Solve(data, blcol, hbcol);
 			if (result.hit)
-			{
-				bltf.velocity = hitbox.returnDirection * Vector3Length(bltf.velocity) * Ball::PLAYER_HIT_SPEED_MULTIPLIER;
-				ball.wasJustHitByPlayer = true;
-			}
+				OnBallHitHitbox(blid, hbid, result);
 		}
 	}
-}
 
-void BreakoutSystem::ProcessPlayerWallCollision()
-{
-	auto players = m_registry.AllWith<Player, Transform3D, AABBCollider>();
-	auto walls = m_registry.AllWith<Wall, Transform3D, AABBCollider>();
+	// Player vs. ...
 	for (auto [pid, player, ptf, pcol] : players)
 	{
+		// Player vs. Wall
 		for (auto [wid, wall, wtf, wcol] : walls)
 		{
 			CollisionData data = { ptf.position, wtf.position };
 			CollisionResult result = CollisionSolver::Solve(data, pcol, wcol);
 			if (result.hit)
-			{
-				ptf.position += result.restitution;
-
-				// If wall is roughly ground
-				// TODO: change to make more user defined?
-				if (Vector3DotProduct(wall.normal, { 0.0f, 1.0f, 0.0f }) > 0.9f)
-				{
-					player.isGrounded = true;
-					ptf.velocity.y = 0.0f;
-					ptf.acceleration.y = 0.0f;
-				}
-			}
+				OnPlayerHitWall(pid, wid, result);
 		}
 	}
 }
+
+#pragma endregion
+
+#pragma region Game Logic
 
 void BreakoutSystem::UpdateBalls(float dt)
 {
@@ -299,27 +271,146 @@ void BreakoutSystem::UpdateBalls(float dt)
 			float newSpeed = speed - Ball::DAMP_RATE * dt;
 			tf.velocity = tf.velocity * (newSpeed / speed);
 		}
-	}
-}
 
-void BreakoutSystem::UpdateBricks()
-{
-	for (auto [id, brick] : m_registry.AllWith<Brick>())
-	{
-		if (brick.wasJustHit)
+		// Spawn particles
+		if (speed >= Ball::PARTICLE_SPEED_THRESHOLD)
 		{
-			brick.wasJustHit = false;
-			brick.health--;
-			if (brick.health <= 0)
-				m_registry.QueueDelete(id);
+			ball.particleSpawnTimer -= dt;
+			if (ball.particleSpawnTimer <= 0.0f)
+			{
+				ball.particleSpawnTimer = Ball::PARTICLE_SPAWN_PERIOD;
+				
+				Vec3 pos = tf.position + RandomPointInSphere() * 0.4f;
+				Vec3 vel = tf.velocity;
+				Vec3 acc = Vector3Negate(tf.velocity) * 2.0f;
+
+				Color color = m_registry.Has<Gravity>(id) ? Ball::GRAVITY_PARTICLE_COLOR
+					: m_registry.Has<CurveModifier>(id) ? Ball::CURVE_PARTICLE_COLOR
+					: Ball::NORMAL_PARTICLE_COLOR;
+
+				m_factory.CreateBallParticle(pos, vel, acc, color);
+			}
 		}
 	}
 }
 
-//bool BreakoutSystem::IsBallInEndZone()
-//{
-//	// 
-//}
+void BreakoutSystem::ApplyBallModifiers(float dt)
+{
+	for (auto [id, curve, tf] : m_registry.AllWith<CurveModifier, Transform3D>())
+	{
+		tf.velocity += curve.direction * curve.strength * dt;
+	}
+}
+
+int BreakoutSystem::DeleteBricksAndGetPoints()
+{
+	int total = 0;
+	for (auto [id, brick] : m_registry.AllWith<Brick>())
+	{
+		if (brick.health <= 0)
+		{
+			total += brick.points;
+			m_registry.QueueDelete(id);
+		}
+	}
+	return total;
+}
+
+void BreakoutSystem::DeleteBallsInEndZone(float endZone)
+{
+	for (auto [id, ball, tf] : m_registry.AllWith<Ball, Transform3D>())
+	{
+		if (tf.position.z < -endZone)
+			m_registry.QueueDelete(id);
+	}
+}
+
+void BreakoutSystem::DeleteOutOfBoundsBalls(const Vec3& pos, const Vec3& size)
+{
+	for (auto [id, ball, tf] : m_registry.AllWith<Ball, Transform3D>())
+	{
+		bool isOOB = 
+			tf.position.x < pos.x - size.x * 0.5f ||
+			tf.position.x > pos.x + size.x * 0.5f ||
+			tf.position.y < pos.y - size.y * 0.5f ||
+			tf.position.y > pos.y + size.y * 0.5f ||
+			tf.position.z < pos.z - size.z * 0.5f ||
+			tf.position.z > pos.z + size.z * 0.5f;
+
+		if (isOOB)
+			m_registry.QueueDelete(id);
+	}
+}
+
+#pragma endregion
+
+#pragma region Events
+
+void BreakoutSystem::OnBallHitWall(Entity ball, Entity wall, const CollisionResult& result)
+{
+	// Apply reflection
+	Transform3D& ballTF = m_registry.Get<Transform3D>(ball);
+	ballTF.position += result.restitution;
+	ballTF.velocity = Reflect(ballTF.velocity, result.contactNormal);
+	
+	// Set data
+	Ball& ballData = m_registry.Get<Ball>(ball);
+	ballData.lastHitByPlayer = false;
+
+	// Remove modifiers
+	if (m_registry.Has<Gravity>(ball))
+		m_registry.Remove<Gravity>(ball);
+
+	if (m_registry.Has<CurveModifier>(ball))
+		m_registry.Remove<CurveModifier>(ball);
+}
+
+void BreakoutSystem::OnBallHitBrick(Entity ball, Entity brick, const CollisionResult& result)
+{
+	// Ball behaviour
+	Transform3D& ballTF = m_registry.Get<Transform3D>(ball);
+	ballTF.position += result.restitution;
+	ballTF.velocity = Reflect(ballTF.velocity, result.contactNormal);
+
+	Ball& ballData = m_registry.Get<Ball>(ball);
+	ballData.lastHitByPlayer = false;
+
+	// Brick behaviour
+	Brick& brickData = m_registry.Get<Brick>(brick);
+	brickData.health--;
+}
+
+void BreakoutSystem::OnBallHitHitbox(Entity ball, Entity hitbox, const CollisionResult& result)
+{
+	// Reflect
+	const PlayerHitbox& hitboxData = m_registry.Get<PlayerHitbox>(hitbox);
+	Transform3D& ballTF = m_registry.Get<Transform3D>(ball);
+	
+	float speed = Vector3Length(ballTF.velocity);
+	ballTF.velocity = hitboxData.returnDirection * speed * Ball::PLAYER_HIT_SPEED_MULTIPLIER;
+	
+	// Set data
+	m_registry.Get<Ball>(ball).lastHitByPlayer = true;
+}
+
+void BreakoutSystem::OnPlayerHitWall(Entity player, Entity wall, const CollisionResult& result)
+{
+	Transform3D& playerTF = m_registry.Get<Transform3D>(player);
+	playerTF.position += result.restitution;
+
+	const Wall& wallData = m_registry.Get<Wall>(wall);
+	if (wallData.isGround)
+	{
+		Player& playerData = m_registry.Get<Player>(player);
+		playerData.isGrounded = true;
+		playerTF.velocity.y = 0.0f;
+		playerTF.acceleration.y = 0.0f;
+	}
+}
+
+#pragma endregion
+
+#pragma region Rendering
 
 void BreakoutSystem::RenderWalls(const Mesh& mesh, const Material& mat)
 {
@@ -383,8 +474,8 @@ void BreakoutSystem::RenderPrimitiveEntities(const Camera3D& camera)
 #endif
 	}
 
-	// Draw balls
-	for (auto [id, ball, mesh, tf] : m_registry.AllWith<Ball, SphereMesh, Transform3D>())
+	// Draw spheres
+	for (auto [id, mesh, tf] : m_registry.AllWith<SphereMesh, Transform3D>())
 	{
 		DrawSphereWires(tf.position, mesh.radius, mesh.rings, mesh.slices, mesh.outlineColor);
 		DrawSphere(tf.position, mesh.radius, mesh.color);
@@ -421,15 +512,13 @@ void BreakoutSystem::RenderEndzone(Entity endZone, const Mesh& mesh, const Mater
 	Matrix scale = MatrixScale(wall.planeSize.x, 1.0f, wall.planeSize.y);
 
 	// Rotate plane such that up faces the normal
-	float dot = Vector3DotProduct({ 0.0f, 1.0f, 0.0f }, wall.normal);
-	float angle = std::acosf(dot);
-	Vec3 axis = Vector3CrossProduct({ 0.0f, 1.0f, 0.0f }, wall.normal);
-	Matrix rotate = MatrixRotate(axis, angle);
+	//float dot = Vector3DotProduct({ 0.0f, 1.0f, 0.0f }, wall.normal);
+	//float angle = std::acosf(dot);
+	//Vec3 axis = Vector3CrossProduct({ 0.0f, 1.0f, 0.0f }, wall.normal);
+	//Matrix rotate = MatrixRotate(axis, angle);
 
 	Matrix translate = MatrixTranslate(tf.position.x, tf.position.y, tf.position.z);
-	rlDisableBackfaceCulling();
-	DrawMesh(mesh, mat, scale * rotate * translate);
-	rlEnableBackfaceCulling();
+	DrawMesh(mesh, mat, scale /** rotate*/ * translate);
 }
 
 void BreakoutSystem::RenderPlayerUI(Entity player)
@@ -451,5 +540,22 @@ void BreakoutSystem::RenderPlayerUI(Entity player)
 
 	float dashProg = pData.liveDashCooldown / pData.dashCooldown;
 	int dashBarLen = static_cast<int>(200.0f * dashProg);
-	DrawRectangle(160, 610, dashBarLen, 24, ColorLerp({ 0, 255, 0, 255 }, RED, dashProg));
+	DrawRectangle(180, 610, dashBarLen, 24, ColorLerp({ 0, 255, 0, 255 }, RED, dashProg));
 }
+
+#pragma endregion
+
+#pragma region Helpers
+
+Vec3 BreakoutSystem::Reflect(const Vec3& direction, const Vec3& normal) const
+{
+	float dot = Vector3DotProduct(direction, normal);
+	return direction - normal * (2.0f * dot);
+}
+
+Vec3 BreakoutSystem::RandomPointInSphere() const
+{
+	return Vector3Normalize({ randf(), randf(), randf() }) * randf();
+}
+
+#pragma endregion

@@ -3,6 +3,8 @@
 #include <string>
 #include <raylib.h>
 
+// Sunday update: i didn't end up using this
+
 // A simple RAII wrapper class for Raylib textures.
 // When the RLTexture is deleted, then the texture
 // is deleted, regardless of any other Texture2Ds

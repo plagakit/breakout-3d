@@ -19,14 +19,18 @@ public:
 	void Update(float dt);
 	void Render();
 
+	void StartGame();
+	void LoseGame();
+	void WinGame();
+
 private:
-	static constexpr size_t RESERVE_SIZE = 1000;
+	// Essentials
 	EntityManager& m_registry;
 
 	BreakoutFactory m_factory;
 	BreakoutSystem m_system;
 
-	//RLTexture m_txtBall;
+	// Resources
 
 	Texture m_txChecker;
 	Texture m_txEndzone;
@@ -38,13 +42,33 @@ private:
 	Mesh m_meshBallShadow;
 	Material m_matBallShadow;
 
-	Camera3D m_camera;
-	Entity m_player;
-	Entity m_endZone;
+	// Game objects & logic
 
 	static constexpr float ROOM_WIDTH = 15.0f;
 	static constexpr float ROOM_HEIGHT = 12.0f;
-	static constexpr float ROOM_LENGTH = 25.0f;
-	static constexpr float END_ZONE = 24.0f;
+	static constexpr float ROOM_LENGTH = 32.0f;
+	static constexpr float END_ZONE = 30.0f;
+
+	static constexpr Vec3 PLAYER_START_POS = { 0.0f, 0.5f, 0.0f };
+	static constexpr Vec3 BALL_START_POS = { 0.0f, 3.0f, 3.0f };
+	static constexpr float BALL_RADIUS = 0.5f;
+	static constexpr float START_GAME_TRANS_TIME = 1.0f;
+	static constexpr float END_GAME_TRANS_TIME = 2.0f;
+
+	enum GameState
+	{
+		HALTING,				// for when the game is paused
+		START_GAME_TRANSITION,	// 2-second anim where ball flashes and player respawns
+		PLAYING,				// main state
+		END_GAME_TRANSITION,	// 2-second camera transition back to spawn location
+	};
+	GameState m_gameState;
+	float m_transitionTimer;
+
+	int m_points;
+
+	Camera3D m_camera;
+	Entity m_player;
+	Entity m_endZone;
 
 };

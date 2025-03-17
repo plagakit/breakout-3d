@@ -21,9 +21,6 @@
     <ClCompile Include="src\ecs\entity_manager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\game\old_2d_game\breakout\breakout_scene.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\game\game.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -31,12 +28,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\math\collision_solver.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\game\old_2d_game\breakout\systems\breakout_system.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\game\old_2d_game\breakout\factory\breakout_factory.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\game\breakout\breakout.cpp">
@@ -71,9 +62,6 @@
     <ClInclude Include="src\ecs\entity_view.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\game\old_2d_game\breakout\breakout_scene.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\game\game.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -87,15 +75,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\math\math.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\game\old_2d_game\breakout\components\breakout_components.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\game\old_2d_game\breakout\systems\breakout_system.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\game\old_2d_game\breakout\factory\breakout_factory.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\game\breakout\breakout.h">

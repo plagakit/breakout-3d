@@ -3,6 +3,10 @@
 #include "math/math.h"
 #include <raylib.h>
 
+// A collection of all the components to be used in the breakout
+// scene. Scaling up, these should be put into separate classes,
+// but I'm bunching them all here due to the small size of this game.
+
 // 3D Movement
 
 struct Transform3D
@@ -110,6 +114,7 @@ struct Wall
 {
 	static constexpr float THICKNESS = 100.0f;
 
+	bool isGround = false;
 	Vec3 normal = { 0.0f, 0.0f, 0.0f };
 	Vec2 planeSize = { 0.0f, 0.0f };
 };
@@ -117,18 +122,46 @@ struct Wall
 struct Ball
 {
 	static constexpr float DEFAULT_RADIUS = 1.0f;
-	bool wasJustHitByPlayer = false;
+	bool lastHitByPlayer = false;
 
 	// The ball can reach a speed above the hard limit, but then quickly damps down to soft limit
-	static constexpr float HARD_MAX_SPEED = 15.0f;
-	static constexpr float SOFT_MAX_SPEED = 10.0f;
-	static constexpr float DAMP_RATE = 3.0f;
-	static constexpr float DEFAULT_SPEED = 7.5f;
-	static constexpr float PLAYER_HIT_SPEED_MULTIPLIER = 1.1f;
+	static constexpr float HARD_MAX_SPEED = 22.0f;
+	static constexpr float SOFT_MAX_SPEED = 15.0f;
+	static constexpr float DAMP_RATE = 0.1f;
+	static constexpr float DEFAULT_SPEED = 13.0f;
+	static constexpr float PLAYER_HIT_SPEED_MULTIPLIER = 1.25f;
+	static constexpr float DEFAULT_GRAVITY_STRENGTH = 50.0f;
+
+	static constexpr Color NORMAL_PARTICLE_COLOR = Color{ 253, 249, 0, 100 };
+	static constexpr Color CURVE_PARTICLE_COLOR = Color{ 230, 41, 55, 100 };
+	static constexpr Color GRAVITY_PARTICLE_COLOR = Color{ 0, 121, 241, 100 };
+	static constexpr float PARTICLE_SPEED_THRESHOLD = SOFT_MAX_SPEED + 0.5f;
+	static constexpr float PARTICLE_SPAWN_PERIOD = 0.1f;
+	static constexpr float PARTICLE_LIFETIME = 0.3f;
+	float particleSpawnTimer = PARTICLE_SPAWN_PERIOD;
+};
+
+struct CurveModifier
+{
+	static constexpr float DEFAULT_CURVE_STRENGTH = 25.0f;
+	float strength = DEFAULT_CURVE_STRENGTH;
+	Vec3 direction = { 0.0f, 0.0f, 0.0f };
 };
 
 struct Brick
 {
 	bool wasJustHit = false;
+	Entity wasJustHitBall = NULL_ENTITY;
+
 	int health = 1;
+	int points = 100;
+
+	enum Type
+	{
+		NORMAL,
+		CURVE,
+		GRAVITY,
+		ADD_BALLS
+	};
+	Type type = Type::CURVE;
 };

@@ -26,10 +26,12 @@ void BreakoutFactory::RegisterRequiredComponents()
 	m_registry.RegisterComponentType<CapsuleMesh>(PLAYER_RESERVE);
 	m_registry.RegisterComponentType<Player>(PLAYER_RESERVE);
 	m_registry.RegisterComponentType<PlayerHitbox>(HITBOX_RESERVE);
+
 	m_registry.RegisterComponentType<Gravity>(PLAYER_RESERVE);
+	m_registry.RegisterComponentType<CurveModifier>(BALL_RESERVE);
 }
 
-Entity BreakoutFactory::CreateWall(const Vec3& position, const Vec3& normal, const Vec2& size)
+Entity BreakoutFactory::CreateWall(const Vec3& position, const Vec3& normal, const Vec2& size, bool isGround)
 {
 	// Walls are gonna be AABBs instead of planes to save me some time
 	// but that means I'm gonna have to do some additional math to properly
@@ -65,6 +67,7 @@ Entity BreakoutFactory::CreateWall(const Vec3& position, const Vec3& normal, con
 	Wall w;
 	w.normal = normal;
 	w.planeSize = size;
+	w.isGround = isGround;
 	m_registry.Add<Wall>(e, w);
 
 	return e;
@@ -150,6 +153,29 @@ Entity BreakoutFactory::CreateBall(const Vec3& position, float radius/*, const T
 	return e;
 }
 
+Entity BreakoutFactory::CreateBallParticle(const Vec3& position, const Vec3& velocity, const Vec3& acceleration, const Color& color)
+{
+	Entity e = m_registry.CreateEntity();
+	
+	Transform3D tf;
+	tf.position = position;
+	tf.velocity = velocity;
+	tf.acceleration = acceleration;
+	m_registry.Add<Transform3D>(e, tf);
+
+	Particle p;
+	p.timeLeft = Ball::PARTICLE_LIFETIME;
+	m_registry.Add<Particle>(e, p);
+
+	SphereMesh mesh;
+	mesh.color = color;
+	mesh.outlineColor = color;
+	mesh.radius = 0.2f;
+	m_registry.Add<SphereMesh>(e, mesh);
+
+	return e;
+}
+
 Entity BreakoutFactory::CreateBrick(const Vec3& position, const Vec3& size, int health)
 {
 	Entity e = m_registry.CreateEntity();
@@ -171,7 +197,7 @@ Entity BreakoutFactory::CreateBrick(const Vec3& position, const Vec3& size, int 
 	return e;
 }
 
-void BreakoutFactory::CreateBrickGrid(const Vec3& bottomLeft, const Vec3& topRight, const Vec3& slices, float spacing, uint8_t health)
+void BreakoutFactory::CreateBrickGrid(const Vec3& bottomLeft, const Vec3& topRight, const Vec3& slices, const Vec3& spacing, uint8_t health)
 {
 	Vec3 totalSize = topRight - bottomLeft;
 	Vec3 totalSpacing = Vec3{ slices.x - 1, slices.y - 1, slices.z - 1 } * spacing;
@@ -183,10 +209,11 @@ void BreakoutFactory::CreateBrickGrid(const Vec3& bottomLeft, const Vec3& topRig
 		{
 			for (int k = 0; k < slices.z; k++)
 			{
-				float x = bottomLeft.x + (size.x + spacing) * i;
-				float y = bottomLeft.y + (size.y + spacing) * j;
-				float z = bottomLeft.z + (size.z + spacing) * k;
-				CreateBrick({ x, y, z }, size, health);
+				float x = bottomLeft.x + (size.x + spacing.x) * i;
+				float y = bottomLeft.y + (size.y + spacing.y) * j;
+				float z = bottomLeft.z + (size.z + spacing.z) * k;
+				Vec3 pos = Vec3{ x, y, z } + size * 0.5f;
+				CreateBrick(pos, size, health);
 			}
 		}
 	}
