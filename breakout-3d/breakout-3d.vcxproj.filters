@@ -96,7 +96,4 @@
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
-  <ItemGroup>
-    <Text Include="plan.txt" />
-  </ItemGroup>
 </Project>

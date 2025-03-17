@@ -185,9 +185,6 @@
     <ClInclude Include="src\math\math.h" />
     <ClInclude Include="src\resource\rl_texture.h" />
   </ItemGroup>
-  <ItemGroup>
-    <Text Include="plan.txt" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
