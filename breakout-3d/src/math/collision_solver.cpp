@@ -1,6 +1,7 @@
 #include "collision_solver.h"
 
 // I'll implement these as I need them
+// https://www.realtimerendering.com/intersections.html
 
 #include <algorithm>
 #include <iostream>
@@ -91,6 +92,7 @@ CollisionResult CollisionSolver::Solve(const CollisionData& data, const SphereCo
 	return result;
 }
 
+// Box vs. Box
 CollisionResult CollisionSolver::Solve(const CollisionData& data, const AABBCollider& b1, const AABBCollider& b2)
 {
 	CollisionResult result{};

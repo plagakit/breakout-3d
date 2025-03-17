@@ -34,7 +34,7 @@ public:
 	// Game events
 	// Scaling up, these should use an event design pattern such as observers or an event queue
 	// held by each system. For the small scope of breakout, I think this will do for now so I don't
-	// have to write a lot of code
+	// have to write a lot of code to set up the event system
 	void OnBallHitWall(Entity ball, Entity wall, const CollisionResult& result);
 	void OnBallHitBrick(Entity ball, Entity brick, const CollisionResult& result);
 	void OnBallHitHitbox(Entity ball, Entity hitbox, const CollisionResult& result);

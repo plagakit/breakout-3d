@@ -8,9 +8,11 @@
 #include <raymath.h>
 
 /**
-The main game that orchestrates everything - breakout, and the roguelike
+The main game that orchestrates everything - breakout, the planned roguelike
 that is built on top of it. Also holds essential systems like the entity
 registry.
+
+Monday update: didn't have time to make it a roguelike.... :')
 */
 class Game
 {

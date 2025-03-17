@@ -11,6 +11,11 @@
 // One advantage of ECS that I forgot to mention during the interview
 // is that in systems with minimal dependencies, they can easily be
 // parallelized - so I should do that
+// I think also having everything bunched into components means the
+// game state is easily serialized
+
+
+// old:
 
 // INCLUDED AT END OF entity_manager.h B/C OF CIRCULAR DEPENDENCIES w/ TEMPLATE CLASSES
 

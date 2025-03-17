@@ -3,12 +3,12 @@
 #include <string>
 #include <raylib.h>
 
-// Sunday update: i didn't end up using this
+// Sunday update: i didn't end up using this lol
 
 // A simple RAII wrapper class for Raylib textures.
 // When the RLTexture is deleted, then the texture
-// is deleted, regardless of any other Texture2Ds
-// with the same VRAM id are circulating around.
+// is deleted, regardless if any other Texture2Ds
+// with the same id are circulating around.
 class RLTexture
 {
 public:

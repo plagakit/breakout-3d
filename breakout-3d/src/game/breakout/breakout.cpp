@@ -6,9 +6,7 @@
 Breakout::Breakout(EntityManager& registry) :
 	m_registry(registry),
 	m_factory(registry),
-	m_system(registry, m_factory),
-	//m_txtBall("res/sprites/ball.png")
-	m_points(0)
+	m_system(registry, m_factory)
 {
 	// Load resources
 	Image checkerboard = GenImageChecked(128, 128, 4, 4, { 50, 50, 50, 255 }, { 75, 75, 75, 255 });
@@ -36,13 +34,16 @@ Breakout::Breakout(EntityManager& registry) :
 	m_matBallShadow = LoadMaterialDefault();
 	SetMaterialTexture(&m_matBallShadow, MATERIAL_MAP_DIFFUSE, m_txBallShadow);
 
+	// Initialize entity manager
 	m_factory.RegisterRequiredComponents();
 	
+	// Start game
 	RestartGame();
 }
 
 Breakout::~Breakout()
 {
+	// Unload resources
 	UnloadTexture(m_txChecker);
 	UnloadTexture(m_txEndzone);
 	UnloadMesh(m_meshPlane);
@@ -84,16 +85,15 @@ void Breakout::Update(float dt)
 	else if (m_gameState == GameState::ROUND_START_TRANS)
 	{
 		// Blink sphere mesh color
-		SphereMesh& mesh = m_registry.Get<SphereMesh>(m_firstBall);
-
 		// https://www.desmos.com/calculator/cavfrig7bc
+		SphereMesh& mesh = m_registry.Get<SphereMesh>(m_firstBall);
 		float t = m_transitionTimer / ROUND_START_TRANS_TIME;
-		mesh.color.a = 127.5f * sinf(20.0f * t) + 127.5f;
+		mesh.color.a = static_cast<unsigned char>(127.5f * sinf(20.0f * t) + 127.5f);
 
 		if (m_transitionTimer <= 0.0f)
 		{
 			m_gameState = GameState::PLAYING;
-			mesh.color = WHITE;
+			mesh.color.a = 255;
 		}
 	}
 	else if (m_gameState == GameState::ROUND_END_TRANS)

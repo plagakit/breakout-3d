@@ -10,7 +10,7 @@
 
 #include <raylib.h>
 
-// A class for holding all the logic of the breakout game
+// A class for orchestrating all the logic of the breakout game
 class Breakout
 {
 public:
@@ -30,6 +30,9 @@ private:
 	BreakoutSystem m_system;
 
 	// Resources
+	// I would have like to include better resource management maybe
+	// using RAII or some sort of resource manager but I tried focusing
+	// on gameplay features instead
 
 	Texture m_txChecker;
 	Texture m_txEndzone;
@@ -55,13 +58,13 @@ private:
 	static constexpr float ROUND_END_TRANS_TIME = 1.0f;
 
 	// Instead of making this a const embedded into the game we can
-	// load it from a JSON, pass it into Breakout as a param, etc.
-	// but for this scope this works
+	// load it from a JSON, pass it into Breakout as a param from Game, etc.
+	// but for the small scope of this project, this works
 	static constexpr BrickTypeInfoArr BRICK_TYPE_INFO = {
-		BrickTypeInfo{ 100, PURPLE, DARKPURPLE },  // NORMAL	
-		BrickTypeInfo{ 150, RED, MAROON },  // CURVE	
-		BrickTypeInfo{ 200, BLUE, DARKBLUE },	  // GRAVITY
-		BrickTypeInfo{ 150, { 85, 212, 110, 255 }, GREEN } // ADD_BALLS
+		BrickTypeInfo{ 100, PURPLE, DARKPURPLE },			// NORMAL	
+		BrickTypeInfo{ 150, RED, MAROON },					// CURVE	
+		BrickTypeInfo{ 200, BLUE, DARKBLUE },				// GRAVITY
+		BrickTypeInfo{ 150, { 85, 212, 110, 255 }, GREEN }	// ADD_BALLS
 	};
 
 	enum GameState
@@ -69,7 +72,7 @@ private:
 		HALTING,			// for when the game is paused
 		ROUND_START_TRANS,	// 2-second anim where ball flashes and player respawns
 		PLAYING,			// main state
-		ROUND_END_TRANS,	// 2-second camera transition back to spawn location
+		ROUND_END_TRANS,	// 1-second camera transition back to spawn location
 	};
 	GameState m_gameState;
 	float m_transitionTimer;

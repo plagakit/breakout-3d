@@ -1,8 +1,7 @@
 #pragma once
 
-// Making this file on Tuesday after sending the email question about
-// whether I'm allowed to use GLM or not, for now I'll just make some
-// typedefs so I can keep working without knowing
+// I ended up using Raylib just to make it easier
+// for compatibility with its functions
 
 #include <raylib.h>
 #include <raymath.h>

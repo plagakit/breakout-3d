@@ -1,5 +1,7 @@
 #pragma once
 
+// See entity_manager.h
+
 #include <bitset>
 #include <type_traits>
 

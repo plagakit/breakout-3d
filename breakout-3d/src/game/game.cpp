@@ -25,8 +25,9 @@ void Game::Update(float dt)
 
 void Game::Render()
 {
-	// Draw scrolling background
 	ClearBackground({ 50, 50, 50, 255 });
+
+	// Draw scrolling background
 	//for (int i = 0; i * SCROLL_BG_SPACING < Game::SCREEN_WIDTH; i++)
 	//{
 	//	int x = static_cast<int>(i * SCROLL_BG_SPACING + m_scrollBGOffset.x);

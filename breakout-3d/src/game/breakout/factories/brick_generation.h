@@ -6,7 +6,7 @@
 #include <array>
 #include <vector>
 
-
+// Config and info data for each brick type
 
 struct BrickTypeInfo
 {

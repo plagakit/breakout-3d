@@ -403,7 +403,7 @@ void BreakoutSystem::OnBallHitBrick(Entity ball, Entity brick, const CollisionRe
 	Brick& brickData = m_registry.Get<Brick>(brick);
 	brickData.health--;
 
-	// Apply modifiers
+	// Apply modifiers on ball
 	if (brickData.type == Brick::Type::CURVE)
 	{
 		if (!m_registry.Has<CurveModifier>(ball))
@@ -456,10 +456,9 @@ void BreakoutSystem::OnBallHitHitbox(Entity ball, Entity hitbox, const Collision
 	float speed = Vector3Length(ballTF.velocity);
 	ballTF.velocity = hitboxData.returnDirection * speed * Ball::PLAYER_HIT_SPEED_MULTIPLIER;
 	
-	// Set data
+	// Ball behaviour
 	m_registry.Get<Ball>(ball).lastHitByPlayer = true;
 
-	// Remove modifiers
 	if (m_registry.Has<Gravity>(ball))
 		m_registry.Remove<Gravity>(ball);
 
@@ -472,6 +471,7 @@ void BreakoutSystem::OnPlayerHitWall(Entity player, Entity wall, const Collision
 	Transform3D& playerTF = m_registry.Get<Transform3D>(player);
 	playerTF.position += result.restitution;
 
+	// Player behaviour
 	const Wall& wallData = m_registry.Get<Wall>(wall);
 	if (wallData.isGround)
 	{
@@ -494,12 +494,7 @@ void BreakoutSystem::RenderWalls(const Mesh& mesh, const Material& mat)
 	{
 		Matrix scale = MatrixScale(wall.planeSize.x, 1.0f, wall.planeSize.y);
 
-		/*Quaternion orientation = QuaternionFromEuler(0.0f, 0.0f, 0.0f);
-		Matrix rotate = QuaternionToMatrix(orientation);*/
-		//Matrix rotate = MatrixLookAt({ 0.0f, 0.0f, 0.0f }, wall.normal, { 0.0f, 1.0f, 0.0f });
-
 		// Rotate plane such that up faces the normal
-
 		const Vec3 up = { 0.0f, 1.0f, 0.0f };
 		float angle = 0.0f;
 		Vec3 axis = up;
@@ -519,7 +514,6 @@ void BreakoutSystem::RenderWalls(const Mesh& mesh, const Material& mat)
 		Vec3 offset = tf.position + Vec3{ box.width, box.height, box.length } * wall.normal * 0.5f;
 		Matrix translate = MatrixTranslate(offset.x, offset.y, offset.z);
 		DrawMesh(mesh, mat, scale * rotate * translate);
-		//DrawCube(tf.position, box.width, box.height, box.length, { 100, 100, 0, 100 });
 	}
 }
 
@@ -577,6 +571,7 @@ void BreakoutSystem::RenderBallShadows(const Mesh& quad, const Material& mat)
 {
 	for (auto [id, ball, tf] : m_registry.AllWith<Ball, Transform3D>())
 	{
+		// TODO: remove magic numbers
 		Matrix m = MatrixScale(2.0f, 1.0f, 2.0f) * MatrixTranslate(tf.position.x, 0.01f, tf.position.z);
 		DrawMesh(quad, mat, m);
 	}
@@ -661,7 +656,8 @@ void BreakoutSystem::GenerateVectorsInCone(Vector3 direction, float tiltAngle, i
 		out[i] = { x, y, z };
 	}
 
-	// Align up to target direction
+	// Calculate quat that will do: quat * up = direction
+	// The change in rotation is like rotating it by the cross axis
 	Quaternion rot;
 	Vec3 axis = Vector3CrossProduct({ 0.0f, 1.0f, 0.0f }, direction);
 	if (Vector3Length(axis) < EPSILON) // if target direction parallel w/ up

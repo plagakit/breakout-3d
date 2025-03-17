@@ -6,7 +6,7 @@
 
 // A collection of all the components to be used in the breakout
 // scene. Scaling up, these should be put into separate classes,
-// but I'm bunching them all here due to the small size of this game.
+// but I'm bunching them all here due to the small scope of this game.
 
 // 3D Movement
 
@@ -109,8 +109,8 @@ struct Player
 
 	// Jumping
 	// TODO: a proper state machine system, so we can reuse transitions
-	// ex. in air -> grounded sets vel.y = 0, if multiple areas in the code can
-	// trigger this then i think there should be some sort of general transition function to call
+	// ex. in air -> grounded sets vel.y = 0, if multiple areas in the code trigger
+	// this then i think there should be some sort of general transition function to call
 	enum AirState
 	{
 		GROUNDED,
@@ -178,6 +178,7 @@ struct CurveModifier
 
 struct Brick
 {
+	// TODO: use an event system instead of flags
 	bool wasJustHit = false;
 	Entity wasJustHitBall = NULL_ENTITY;
 

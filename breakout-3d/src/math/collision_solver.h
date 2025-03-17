@@ -2,6 +2,7 @@
 
 #include "colliders.h"
 
+// Auxilliary data needed to solve a collision
 struct CollisionData
 {
 	Vec3 pos1 = { 0.0f, 0.0f, 0.0f };
